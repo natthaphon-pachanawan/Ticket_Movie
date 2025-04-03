@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('provinces', function (Blueprint $table) {
             $table->id();
+            $table->string('name_th')->unique();
+            $table->string('name_en')->unique();
+            $table->unsignedBigInteger('geography_id');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

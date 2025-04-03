@@ -13,8 +13,15 @@ return new class extends Migration
     {
         Schema::create('districts', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('province_id'); // FK provinces
+            $table->string('name_th');
+            $table->string('name_en');
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('province_id')->references('id')->on('provinces')->onDelete('cascade');
         });
+
     }
 
     /**

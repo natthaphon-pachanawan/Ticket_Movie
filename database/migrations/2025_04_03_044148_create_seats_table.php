@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('screening_room_id'); // ห้องฉายที่ที่นั่งนี้อยู่
+            $table->string('seat_number'); // รหัสที่นั่ง เช่น A1, B5
+            $table->string('row')->nullable(); // ถ้าอยากจัดกลุ่มแถว
+            $table->string('column')->nullable(); // ถ้าต้องการ
+            $table->string('seat_type')->default('regular'); // regular, VIP ฯลฯ
+            $table->boolean('is_active')->default(true); // ใช้งาน/ปิด
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('screening_room_id')->references('id')->on('screening_rooms')->onDelete('cascade');
         });
     }
 

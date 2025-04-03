@@ -13,8 +13,16 @@ return new class extends Migration
     {
         Schema::create('subdistricts', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('district_id'); // FK districts
+            $table->string('name_th');
+            $table->string('name_en');
+            $table->string('zip_code');
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('district_id')->references('id')->on('districts')->onDelete('cascade');
         });
+
     }
 
     /**

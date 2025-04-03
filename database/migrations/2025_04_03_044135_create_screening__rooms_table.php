@@ -11,9 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('screening__rooms', function (Blueprint $table) {
+        Schema::create('screening_rooms', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('cinema_id');
+            $table->string('room_name');
+            $table->integer('seat_capacity')->default(0);
+            $table->text('description')->nullable();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('cinema_id')->references('id')->on('cinemas')->onDelete('cascade');
         });
     }
 

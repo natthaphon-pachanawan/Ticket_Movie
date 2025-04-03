@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('logs', function (Blueprint $table) {
             $table->id();
+            $table->string('action');
+            $table->string('description');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('ip_address')->nullable();
             $table->timestamps();
+            $table->softDeletes();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
         });
     }
 

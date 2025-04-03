@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('screenings', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('movie_id');
+            $table->unsignedBigInteger('screening_room_id');
+            $table->dateTime('screening_datetime');
+            $table->decimal('price', 8, 2);
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('movie_id')->references('id')->on('movies')->onDelete('cascade');
+            $table->foreign('screening_room_id')->references('id')->on('screening_rooms')->onDelete('cascade');
         });
     }
 
