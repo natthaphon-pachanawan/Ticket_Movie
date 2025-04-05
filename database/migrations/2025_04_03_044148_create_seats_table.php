@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //Model Seat
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('screening_room_id'); // ห้องฉายที่ที่นั่งนี้อยู่

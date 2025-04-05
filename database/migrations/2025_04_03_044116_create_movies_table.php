@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //Model Movie
         Schema::create('movies', function (Blueprint $table) {
             $table->id();
             $table->string('title');

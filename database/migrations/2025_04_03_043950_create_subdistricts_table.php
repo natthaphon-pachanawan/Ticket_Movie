@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //Model District
         Schema::create('subdistricts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('district_id'); // FK districts

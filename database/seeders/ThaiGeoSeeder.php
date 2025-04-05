@@ -4,14 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ThaiGeoSeeder extends Seeder
 {
     public function run(): void
     {
         // Provinces
-        $provinces = json_decode(Storage::get('thai-geo/api_province.json'), true);
+        $provincePath = storage_path('app/thai-geo/api_province.json');
+        $provinces = json_decode(file_get_contents($provincePath), true);
+
         foreach ($provinces as $province) {
             DB::table('provinces')->insert([
                 'id' => $province['id'],
@@ -24,7 +25,9 @@ class ThaiGeoSeeder extends Seeder
         }
 
         // Districts
-        $districts = json_decode(Storage::get('thai-geo/api_amphure.json'), true);
+        $districtPath = storage_path('app/thai-geo/api_amphure.json');
+        $districts = json_decode(file_get_contents($districtPath), true);
+
         foreach ($districts as $district) {
             DB::table('districts')->insert([
                 'id' => $district['id'],
@@ -37,8 +40,16 @@ class ThaiGeoSeeder extends Seeder
         }
 
         // Subdistricts
-        $subdistricts = json_decode(Storage::get('thai-geo/api_tambon.json'), true);
+        $subdistrictPath = storage_path('app/thai-geo/api_tambon.json');
+        $subdistricts = json_decode(file_get_contents($subdistrictPath), true);
+
         foreach ($subdistricts as $subdistrict) {
+            // ตรวจสอบว่ามี district_id อยู่ในตาราง districts ก่อน
+            $exists = DB::table('districts')->where('id', $subdistrict['amphure_id'])->exists();
+            if (!$exists) {
+                continue; // ข้าม
+            }
+
             DB::table('subdistricts')->insert([
                 'id' => $subdistrict['id'],
                 'district_id' => $subdistrict['amphure_id'],

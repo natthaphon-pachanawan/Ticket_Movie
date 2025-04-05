@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        //Model Slip
         Schema::create('slips', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('booking_id');
