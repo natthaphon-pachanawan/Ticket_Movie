@@ -20,5 +20,5 @@ Route::delete('/movies/delete/{id}', [MovieController::class, 'destroy']);
 Route::get('/cinemas/list', [CinemaController::class, 'index']);
 Route::get('/cinemas/detail/{id}', [CinemaController::class, 'show']);
 Route::post('/cinemas/create', [CinemaController::class, 'store']);
-Route::put('/cinemas/update/{id}', [CinemaController::class, 'update']);
+Route::post('/cinemas/update/{id}', [CinemaController::class, 'update']);
 Route::delete('/cinemas/delete/{id}', [CinemaController::class, 'destroy']);

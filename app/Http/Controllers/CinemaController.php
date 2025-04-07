@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Cinema;
 
 class CinemaController extends Controller
 {
@@ -11,7 +12,9 @@ class CinemaController extends Controller
      */
     public function index()
     {
-        //
+        $cinema = Cinema::with('province', 'district', 'subdistrict')
+            ->get();
+        return $this->returnJson($cinema);
     }
 
     /**
@@ -19,7 +22,30 @@ class CinemaController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+            'province_id' => 'required|exists:provinces,id',
+            'district_id' => 'required|exists:districts,id',
+            'subdistrict_id' => 'required|exists:subdistricts,id',
+            'contact_phone' => 'nullable|string|max:20',
+            'contact_email' => 'nullable|email|max:255',
+        ]);
+
+        $cinema = Cinema::create([
+                'name' => $request->name,
+                'address' => $request->address,
+                'province_id' => $request->province_id,
+                'district_id' => $request->district_id,
+                'subdistrict_id' => $request->subdistrict_id,
+                'contact_phone' => $request->contact_phone,
+                'contact_email' => $request->contact_email,
+            ]);
+        if (!$cinema) {
+            return $this->returnError('เพิ่มข้อมูลไม่สำเร็จ', 500);
+        }
+
+        return $this->returnCreated($cinema);
     }
 
     /**
@@ -27,7 +53,12 @@ class CinemaController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $cinema = Cinema::with('province', 'district', 'subdistrict')
+            ->find($id);
+        if (!$cinema) {
+            return $this->returnNotFound('ไม่พบข้อมูลโรงภาพยนตร์ที่ระบุ');
+        }
+        return $this->returnJson($cinema);
     }
 
     /**
@@ -35,7 +66,33 @@ class CinemaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+            'province_id' => 'required|exists:provinces,id',
+            'district_id' => 'required|exists:districts,id',
+            'subdistrict_id' => 'required|exists:subdistricts,id',
+            'contact_phone' => 'nullable|string|max:20',
+            'contact_email' => 'nullable|email|max:255',
+        ]);
+
+        $cinema = Cinema::find($id);
+        if (!$cinema) {
+            return $this->returnNotFound('ไม่พบข้อมูลโรงภาพยนตร์ที่ระบุ');
+        }
+
+        $cinema->name = $request->name;
+        $cinema->address = $request->address;
+        $cinema->province_id = $request->province_id;
+        $cinema->district_id = $request->district_id;
+        $cinema->subdistrict_id = $request->subdistrict_id;
+        $cinema->contact_phone = $request->contact_phone;
+        $cinema->contact_email = $request->contact_email;
+        $cinema->save();
+        if (!$cinema) {
+            return $this->returnError('อัปเดตข้อมูลไม่สำเร็จ', 500);
+        }
+        return $this->returnSuccess('อัปเดตข้อมูลโรงภาพยนตร์เรียบร้อยแล้ว');
     }
 
     /**
@@ -43,6 +100,12 @@ class CinemaController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $cinema = Cinema::find($id);
+        if (!$cinema) {
+            return $this->returnNotFound('ไม่พบข้อมูลโรงภาพยนตร์ที่ระบุ');
+        }
+
+        $cinema->delete();
+        return $this->returnSuccess('ลบข้อมูลโรงภาพยนตร์เรียบร้อยแล้ว');
     }
 }

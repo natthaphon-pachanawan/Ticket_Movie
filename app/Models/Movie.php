@@ -9,8 +9,7 @@ use Illuminate\Testing\Fluent\Concerns\Has;
 
 class Movie extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
     protected $table = 'movies';
     protected $softDelete = true;
     protected $fillable = [
@@ -23,6 +22,10 @@ class Movie extends Model
         'release_date',
         'poster_url',
     ];
-
     protected $hidden = ['deleted_at'];
+
+    public function screenings()
+    {
+        return $this->hasMany(Screening::class);
+    }
 }
