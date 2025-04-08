@@ -51,6 +51,8 @@ class MovieController extends Controller
             return $this->returnError('เพิ่มข้อมูลไม่สำเร็จ', 500);
         }
 
+        $this->log('เพิ่มภาพยนตร์', "เพิ่มภาพยนตร์ชื่อ: {$movie->title}");
+
         return $this->returnCreated($movie);
     }
 
@@ -110,6 +112,8 @@ class MovieController extends Controller
         }
         $movie->save();
 
+        $this->log('แก้ไขภาพยนตร์', "แก้ไขข้อมูลภาพยนตร์ ID: {$movie->id}");
+
         return $this->returnSuccess('อัปเดตข้อมูลสำเร็จ', 200);
     }
 
@@ -125,6 +129,8 @@ class MovieController extends Controller
         }
 
         $movie->delete();
+
+        $this->log('ลบภาพยนตร์', "ลบภาพยนตร์ชื่อ: {$movie->title} (ID: {$movie->id})");
 
         return $this->returnJson('ลบข้อมูลสำเร็จ', 200);
     }

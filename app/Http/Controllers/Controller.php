@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Log;
+use Illuminate\Support\Facades\Auth;
 
 abstract class Controller
 {
@@ -24,8 +26,23 @@ abstract class Controller
         return response()->json(['error' => $message], $status);
     }
 
-    public function returnCreated($message, $status = 201)
+    public function returnCreated($data, $status = 201)
     {
-        return response()->json(['success' => $message], $status);
+        if (is_array($data)) {
+            return response()->json(['data' => $data], $status);
+        }
+
+        return response()->json(['success' => $data], $status);
+    }
+
+    // Log
+    public function log($action, $description, $userId = null, $ip = null)
+    {
+        Log::create([
+            'action' => $action,
+            'description' => $description,
+            'user_id' => $userId ?? Auth::id(),
+            'ip_address' => $ip ?? request()->ip(),
+        ]);
     }
 }

@@ -45,6 +45,8 @@ class CinemaController extends Controller
             return $this->returnError('เพิ่มข้อมูลไม่สำเร็จ', 500);
         }
 
+        $this->log('เพิ่มโรงหนัง', "เพิ่มโรงหนังชื่อ: {$cinema->name}");
+
         return $this->returnCreated($cinema);
     }
 
@@ -92,6 +94,9 @@ class CinemaController extends Controller
         if (!$cinema) {
             return $this->returnError('อัปเดตข้อมูลไม่สำเร็จ', 500);
         }
+
+        $this->log('แก้ไขโรงหนัง', "แก้ไขข้อมูลโรงหนัง ID: {$cinema->id}");
+
         return $this->returnSuccess('อัปเดตข้อมูลโรงภาพยนตร์เรียบร้อยแล้ว');
     }
 
@@ -106,6 +111,9 @@ class CinemaController extends Controller
         }
 
         $cinema->delete();
+
+        $this->log('ลบโรงหนัง', "ลบโรงหนังชื่อ: {$cinema->name} (ID: {$cinema->id})");
+        
         return $this->returnSuccess('ลบข้อมูลโรงภาพยนตร์เรียบร้อยแล้ว');
     }
 }
