@@ -79,9 +79,6 @@ class CinemaController extends Controller
         ]);
 
         $cinema = Cinema::find($id);
-        if (!$cinema) {
-            return $this->returnNotFound('ไม่พบข้อมูลโรงภาพยนตร์ที่ระบุ');
-        }
 
         $cinema->name = $request->name;
         $cinema->address = $request->address;
@@ -113,7 +110,7 @@ class CinemaController extends Controller
         $cinema->delete();
 
         $this->log('ลบโรงหนัง', "ลบโรงหนังชื่อ: {$cinema->name} (ID: {$cinema->id})");
-        
+
         return $this->returnSuccess('ลบข้อมูลโรงภาพยนตร์เรียบร้อยแล้ว');
     }
 }

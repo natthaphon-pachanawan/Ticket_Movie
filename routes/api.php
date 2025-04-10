@@ -6,6 +6,9 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\CinemaController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ScreeningRoomController;
+use App\Http\Controllers\SeatController;
+use App\Http\Controllers\ScreeningController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -36,6 +39,25 @@ Route::delete('/roles/delete/{id}', [RoleController::class, 'destroy']);
 Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [UserController::class, 'login']);
 
+//Screening Room
+Route::get('/screening-rooms/list', [ScreeningRoomController::class, 'index']);
+Route::get('/screening-rooms/detail/{id}', [ScreeningRoomController::class, 'show']);
+Route::post('/screening-rooms/create', [ScreeningRoomController::class, 'store']);
+Route::post('/screening-rooms/update/{id}', [ScreeningRoomController::class, 'update']);
+Route::delete('/screening-rooms/delete/{id}', [ScreeningRoomController::class, 'destroy']);
+
+// Seats
+Route::get('/seats/list/{screening_room_id}', [SeatController::class, 'index']);
+Route::post('/seats/create', [SeatController::class, 'store']);
+Route::post('/seats/update/{id}', [SeatController::class, 'update']);
+Route::delete('/seats/delete/{id}', [SeatController::class, 'destroy']);
+
+// Screening
+Route::get('/screenings/list', [ScreeningController::class, 'index']);
+Route::get('/screenings/detail/{id}', [ScreeningController::class, 'show']);
+Route::post('/screenings/create', [ScreeningController::class, 'store']);
+Route::post('/screenings/update/{id}', [ScreeningController::class, 'update']);
+Route::delete('/screenings/delete/{id}', [ScreeningController::class, 'destroy']);
 
 Route::middleware('auth:api')->group(function () {
     // Auth

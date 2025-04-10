@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Screening_Room extends Model
+class ScreeningRoom extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'screening_rooms';

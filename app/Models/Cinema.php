@@ -39,6 +39,6 @@ class Cinema extends Model
 
     public function screeningRooms()
     {
-        return $this->hasMany(Screening_Room::class, 'cinema_id');
+        return $this->hasMany(ScreeningRoom::class, 'cinema_id');
     }
 }

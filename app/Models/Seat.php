@@ -23,7 +23,7 @@ class Seat extends Model
 
     public function screeningRoom()
     {
-        return $this->belongsTo(Screening_Room::class, 'screening_room_id');
+        return $this->belongsTo(ScreeningRoom::class, 'screening_room_id');
     }
 
     public function tickets()
