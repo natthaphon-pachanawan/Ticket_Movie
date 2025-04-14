@@ -28,14 +28,20 @@ class BookingController extends Controller
         ]);
 
         // บันทึกเวลาจอง (ในกรณีที่ผู้ใช้ส่งค่ามาเองไม่ครบ)
-        $bookingData = $request->all();
+        $booking = Booking::create([
+            'user_id' => $request->user_id,
+            'screening_id' => $request->screening_id,
+            'booking_datetime' => $request->booking_datetime,
+            'total_price' => $request->total_price,
+            'status' => $request->status,
+            'cancellation_reason' => $request->cancellation_reason
+        ]);
         if (!isset($bookingData['booking_datetime'])) {
             $bookingData['booking_datetime'] = Carbon::now()->format('Y-m-d H:i:s');
         }
 
-        $booking = Booking::create($bookingData);
         if (!$booking) {
-            return $this->returnError('เพิ่มข้อมูลการจองไม่สำเร็จ', 500);
+            return $this->returnError('สร้างการจองไม่สำเร็จ', 500);
         }
         // log การจอง
         $this->log('เพิ่มการจอง', "ผู้ใช้ ID: {$booking->user_id} จองรอบฉาย ID: {$booking->screening_id} รวมราคา: {$booking->total_price}");
@@ -66,7 +72,14 @@ class BookingController extends Controller
             'cancellation_reason' => 'nullable|string',
         ]);
 
-        $booking->update($request->only('status', 'cancellation_reason'));
+        $booking->status = $request->status;
+        $booking->cancellation_reason = $request->cancellation_reason;
+        $booking->save();
+
+        if (!$booking) {
+            return $this->returnError('อัปเดตการจองไม่สําเร็จ', 500);
+        }
+
         $this->log('แก้ไขการจอง', "แก้ไขการจอง ID: {$booking->id} เปลี่ยนสถานะเป็น: {$booking->status}");
 
         return $this->returnSuccess('อัปเดตการจองเรียบร้อย');

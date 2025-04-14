@@ -71,7 +71,13 @@ class TicketController extends Controller
             'status' => 'required|in:active,used,cancelled',
         ]);
 
-        $ticket->update($request->only('status'));
+        $ticket->status = $request->status;
+        $ticket->save();
+
+        if (!$ticket) {
+            return $this->returnError('อัปเดตตั๋วไม่สําเร็จ', 500);
+        }
+
         $this->log('อัปเดตตั๋ว', "อัปเดตสถานะตั๋ว รหัส: {$ticket->ticket_code} เป็น: {$ticket->status}");
 
         return $this->returnSuccess('อัปเดตตั๋วเรียบร้อยแล้ว');
