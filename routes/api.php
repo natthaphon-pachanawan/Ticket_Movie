@@ -98,4 +98,5 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/slips/create', [SlipController::class, 'store']);
     Route::post('/slips/update/{id}', [SlipController::class, 'update']);
     Route::delete('/slips/delete/{id}', [SlipController::class, 'destroy']);
+    
 });
