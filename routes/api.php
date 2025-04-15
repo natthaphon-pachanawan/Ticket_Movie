@@ -43,6 +43,9 @@ Route::get('/seats/list/{screening_room_id}', [SeatController::class, 'index']);
 // Screenings - List & Detail
 Route::get('/screenings/list', [ScreeningController::class, 'index']);
 Route::get('/screenings/detail/{id}', [ScreeningController::class, 'show']);
+Route::get('/screenings/filter/by-movie', [ScreeningController::class, 'listByMovie']);
+Route::get('/screenings/filter/by-movie-and-date', [ScreeningController::class, 'filterByMovieAndDate']);
+
 
 Route::middleware('auth:api')->group(function () {
     // Auth

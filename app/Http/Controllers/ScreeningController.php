@@ -104,4 +104,29 @@ class ScreeningController extends Controller
 
         return $this->returnSuccess('ลบรอบฉายสำเร็จ');
     }
+
+    public function listByMovie(Request $request)
+    {
+        $movie_id = $request->input('movie_id');
+
+        $screenings = Screening::with('movie', 'screeningRoom.cinema')
+            ->where('movie_id', $movie_id)
+            ->get();
+
+        return $this->returnJson($screenings);
+    }
+
+    public function filterByMovieAndDate(Request $request)
+    {
+        $movie_id = $request->input('movie_id');
+        $date = $request->input('date');
+
+        $screenings = Screening::with('movie', 'screeningRoom.cinema')
+            ->where('movie_id', $movie_id)
+            ->whereDate('screening_datetime', $date)
+            ->orderBy('screening_datetime')
+            ->get();
+
+        return $this->returnJson($screenings);
+    }
 }

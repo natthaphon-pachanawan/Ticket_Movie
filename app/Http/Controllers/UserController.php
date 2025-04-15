@@ -65,7 +65,7 @@ class UserController extends Controller
         }
 
         return $this->returnJson([
-            'user' => Auth::user(),
+            'user' => Auth::user()->load('role'),
             'token' => $token,
         ]);
     }
