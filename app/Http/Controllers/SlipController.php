@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Slip;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Ticket;
+use Illuminate\Support\Facades\DB;
 
 class SlipController extends Controller
 {
@@ -99,6 +101,34 @@ class SlipController extends Controller
         $slip->payment_status = $request->payment_status;
         $slip->payment_date = $request->payment_date;
         $slip->save();
+
+        if ($request->payment_status === 'confirmed') {
+            $booking = $slip->booking;
+
+            // ✅ ดึง seat_id จากตารางกลาง booking_seats แทน tickets
+            $seatIds = DB::table('booking_seats')
+                ->where('booking_id', $booking->id)
+                ->pluck('seat_id');
+
+            foreach ($seatIds as $seatId) {
+                // ✅ ป้องกันการสร้างตั๋วซ้ำ
+                $exists = Ticket::where('booking_id', $booking->id)
+                    ->where('seat_id', $seatId)
+                    ->exists();
+
+                if (!$exists) {
+                    Ticket::create([
+                        'booking_id' => $booking->id,
+                        'screening_id' => $booking->screening_id,
+                        'seat_id' => $seatId,
+                        'ticket_code' => strtoupper(uniqid('TICKET_')),
+                        'price' => $booking->total_price / count($seatIds),
+                        'status' => 'active',
+                        'issued_at' => now(),
+                    ]);
+                }
+            }
+        }
 
         $this->log('แก้ไข slip', "Slip ID: {$slip->id} อัปเดตสถานะเป็น: {$slip->payment_status}");
 

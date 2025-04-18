@@ -4,16 +4,33 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Seat;
+use Illuminate\Support\Facades\DB;
 
 class SeatController extends Controller
 {
     public function index($screening_room_id)
     {
-        $seat = Seat::where('screening_room_id', $screening_room_id)
+        // ดึง screening_id จาก query (ถ้าแยกรอบฉาย)
+        $screeningId = request()->query('screening_id');
+
+        $seats = DB::table('seats')
+            ->select('seats.*', DB::raw("
+            EXISTS(
+                SELECT 1
+                FROM booking_seats bs
+                JOIN bookings b
+                  ON bs.booking_id = b.id
+                 AND b.status = 'active'
+                WHERE bs.seat_id = seats.id
+                  AND b.screening_id = {$screeningId}
+            ) AS is_reserved
+        "))
+            ->where('screening_room_id', $screening_room_id)
             ->get();
 
-        return $this->returnJson($seat);
+        return $this->returnJson($seats);
     }
+
 
     public function store(Request $request)
     {

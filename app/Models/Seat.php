@@ -18,6 +18,7 @@ class Seat extends Model
         'column',
         'seat_type',
         'is_active',
+        'is_reserved',
     ];
     protected $hidden = ['deleted_at'];
 

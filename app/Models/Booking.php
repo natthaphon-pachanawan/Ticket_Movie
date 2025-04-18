@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Askedio\SoftCascade\Traits\SoftCascadeTrait;
 
 class Booking extends Model
 {
@@ -20,6 +21,24 @@ class Booking extends Model
         'cancellation_reason',
     ];
     protected $hidden = ['deleted_at'];
+    protected $softCascade = ['seats'];
+
+    protected static function booted()
+    {
+        static::deleting(function ($booking) {
+            if ($booking->isForceDeleting()) {
+                // ลบจริง
+                $booking->seats()->detach();
+            } else {
+                // soft-delete: ลบ pivot ชั่วคราว
+                $booking->seats()->detach();
+            }
+        });
+
+        static::restoring(function ($booking) {
+            // ถ้าต้อง restore ที่นั่งด้วย สามารถเขียน logic ตรงนี้
+        });
+    }
 
     public function user()
     {
@@ -34,5 +53,10 @@ class Booking extends Model
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function seats()
+    {
+        return $this->belongsToMany(Seat::class, 'booking_seats');
     }
 }

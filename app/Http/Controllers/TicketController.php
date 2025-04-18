@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
@@ -95,5 +96,18 @@ class TicketController extends Controller
         $ticket->delete();
 
         return $this->returnSuccess('ลบตั๋วสำเร็จ');
+    }
+
+    public function myTickets()
+    {
+        $user = Auth::user();
+
+        $tickets = Ticket::with(['screening.movie', 'seat'])  // เพิ่ม movie ผ่าน screening
+            ->whereHas('booking', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->get();
+
+        return $this->returnJson($tickets);
     }
 }

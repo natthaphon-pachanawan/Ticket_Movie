@@ -75,4 +75,34 @@ class UserController extends Controller
         Auth::logout();
         return $this->returnSuccess('ออกจากระบบเรียบร้อยแล้ว');
     }
+
+    public function profile()
+    {
+        return $this->returnJson(Auth::user());
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date',
+            'gender' => 'nullable|in:M,F',
+        ]);
+
+        $user->update($request->only([
+            'first_name',
+            'last_name',
+            'phone_number',
+            'date_of_birth',
+            'gender',
+        ]));
+
+        $this->log('อัปเดตโปรไฟล์', "ผู้ใช้ ID: {$user->id} อัปเดตโปรไฟล์");
+
+        return $this->returnSuccess('อัปเดตโปรไฟล์สำเร็จ');
+    }
 }
