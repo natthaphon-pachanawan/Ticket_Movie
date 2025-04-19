@@ -67,6 +67,9 @@ Route::middleware('auth:api')->group(function () {
 
     // ดูตั๋วของตัวเอง
     Route::get('/tickets/my',             [TicketController::class, 'myTickets']);
+
+    Route::get('/bookings/current',  [BookingController::class,'current']);
+    Route::get('/bookings/history',  [BookingController::class,'history']);
 });
 
 

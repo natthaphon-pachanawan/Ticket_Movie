@@ -163,4 +163,31 @@ class BookingController extends Controller
         // 7. ตอบกลับ
         return $this->returnSuccess('ยกเลิกการจองเรียบร้อยแล้ว');
     }
+
+    // รายการจองที่ยัง "เปิดอยู่" = status active
+    public function current()
+    {
+        $bookings = Booking::with(['screening.movie', 'tickets', 'slip'])
+            ->where('user_id', Auth::id())
+            ->where('status', 'active')
+            ->latest()
+            ->get();
+
+        return $this->returnJson($bookings);
+    }
+
+    // ประวัติ = ยกเลิกแล้ว  หรือ  มีตั๋วแล้ว (จ่ายเรียบร้อย)
+    public function history()
+    {
+        $bookings = Booking::with(['screening.movie', 'tickets', 'slip'])
+            ->where('user_id', Auth::id())
+            ->where(function ($q) {
+                $q->where('status', 'cancelled')
+                    ->orWhereHas('tickets');          // มีตั๋ว = จบกระบวนการ
+            })
+            ->latest()
+            ->get();
+
+        return $this->returnJson($bookings);
+    }
 }

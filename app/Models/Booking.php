@@ -59,4 +59,9 @@ class Booking extends Model
     {
         return $this->belongsToMany(Seat::class, 'booking_seats');
     }
+
+    public function slip()
+    {
+        return $this->hasOne(Slip::class);
+    }
 }
