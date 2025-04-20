@@ -8,29 +8,31 @@ use Illuminate\Support\Facades\DB;
 
 class SeatController extends Controller
 {
+    //  App\Http\Controllers\SeatController.php
     public function index($screening_room_id)
     {
-        // ดึง screening_id จาก query (ถ้าแยกรอบฉาย)
+        // id ของ screening ที่ front‑end ส่งมา (เช่น 12)
         $screeningId = request()->query('screening_id');
 
         $seats = DB::table('seats')
-            ->select('seats.*', DB::raw("
-            EXISTS(
+            ->select('seats.*')
+            ->selectRaw(
+                "EXISTS(
                 SELECT 1
                 FROM booking_seats bs
-                JOIN bookings b
-                  ON bs.booking_id = b.id
-                 AND b.status = 'active'
-                WHERE bs.seat_id = seats.id
-                  AND b.screening_id = {$screeningId}
-            ) AS is_reserved
-        "))
-            ->where('screening_room_id', $screening_room_id)
+                JOIN bookings b ON b.id = bs.booking_id
+                WHERE bs.seat_id     = seats.id
+                  AND b.screening_id = ?
+                  AND b.status       = 'active'
+            ) AS is_reserved",
+                [$screeningId]          // <‑‑ binding
+            )
+            ->where('seats.screening_room_id', $screening_room_id)
             ->get();
 
+        // ได้ผลลัพธ์เป็น  [{… , "is_reserved":1}, { …,"is_reserved":0}, … ]
         return $this->returnJson($seats);
     }
-
 
     public function store(Request $request)
     {
@@ -54,6 +56,20 @@ class SeatController extends Controller
         if (!$seat) {
             return $this->returnError('เพิ่มข้อมูลไม่สำเร็จ', 500);
         }
+
+        $seatIds = [$seat->id];
+
+        $exists = DB::table('booking_seats')
+            ->join('bookings', 'bookings.id', '=', 'booking_seats.booking_id')
+            ->whereIn('booking_seats.seat_id', $seatIds)
+            ->where('bookings.screening_id', $request->screening_id)
+            ->where('bookings.status', 'active')
+            ->exists();
+
+        if ($exists) {
+            return $this->returnError('มีบางที่นั่งถูกจองไปแล้ว กรุณาโหลดใหม่', 409);
+        }
+        
         $this->log('เพิ่มที่นั่ง', "เพิ่มที่นั่ง: {$seat->seat_number} ห้อง ID: {$seat->screening_room_id}");
 
         return $this->returnCreated($seat);
