@@ -27,39 +27,39 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'screening_id' => 'required|exists:screenings,id',
-            'booking_datetime' => 'required|date_format:Y-m-d H:i:s',
-            'total_price' => 'required|numeric|min:0',
-            'status' => 'required|in:active,cancelled,expired',
-            'cancellation_reason' => 'nullable|string',
-            'seats' => 'required|array',              // ต้องมี seat_ids
-            'seats.*' => 'required|exists:seats,id',    // ตรวจสอบแต่ละค่าใน array
+            'screening_id'       => 'required|exists:screenings,id',
+            'total_price'        => 'required|numeric|min:0',
+            'seats'              => 'required|array',
+            'seats.*'            => 'required|exists:seats,id',
+            // (เอา status และ booking_datetime ออกไป ให้ default ใน DB/set เอง)
         ]);
 
+        // 1. เวลาปัจจุบัน + 15 นาที = expires_at
+        $now       = Carbon::now();
+        $expiresAt = $now->copy()->addMinutes(15);
+
+        // 2. สร้าง Booking (DB จะมี default status='active' และ booking_datetime ใช้ now())
         $booking = Booking::create([
-            'user_id' => $request->user()->id,
-            'screening_id' => $request->screening_id,
-            'booking_datetime' => $request->booking_datetime,
-            'total_price' => $request->total_price,
-            'status' => $request->status,
-            'cancellation_reason' => $request->cancellation_reason
+            'user_id'          => $request->user()->id,
+            'screening_id'     => $request->screening_id,
+            'booking_datetime' => $now,
+            'expires_at'       => $expiresAt,
+            'total_price'      => $request->total_price,
         ]);
 
         if (!$booking) {
             return $this->returnError('สร้างการจองไม่สำเร็จ', 500);
         }
 
-        $seatIds = $request->input('seats', []); // ✅ กำหนดก่อนใช้
-
-        foreach ($seatIds as $seatId) {
+        // 3. ผูกที่นั่ง
+        foreach ($request->input('seats') as $seatId) {
             DB::table('booking_seats')->insert([
                 'booking_id' => $booking->id,
-                'seat_id' => $seatId,
+                'seat_id'    => $seatId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
-
 
         $this->log('เพิ่มการจอง', "ผู้ใช้ ID: {$booking->user_id} จองรอบฉาย ID: {$booking->screening_id}");
 
@@ -164,30 +164,76 @@ class BookingController extends Controller
         return $this->returnSuccess('ยกเลิกการจองเรียบร้อยแล้ว');
     }
 
-    // รายการจองที่ยัง "เปิดอยู่" = status active
-    public function current()
+    // ประวัติ = ยกเลิกแล้ว  หรือ  มีตั๋วแล้ว (จ่ายเรียบร้อย)
+    public function history()
     {
-        $bookings = Booking::with(['screening.movie', 'tickets', 'slip'])
+        $this->expireOldBookings();
+
+        $now = Carbon::now();
+
+        // ✅ เอาทุก booking ของผู้ใช้มาเลย
+        $bookings = Booking::with(['screening.movie', 'slip', 'tickets'])
             ->where('user_id', Auth::id())
-            ->where('status', 'active')
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($b) use ($now) {
+                // เพิ่ม display_status, can_pay, can_view_ticket
+                $display = 'ยังไม่ได้ชำระเงิน';
+                $canPay = false;
+                $canView = false;
+
+                if ($b->status === 'expired') {
+                    $display = 'หมดอายุ';
+                } elseif (! $b->slip) {
+                    $display = 'ยังไม่ได้ชำระเงิน';
+                    $canPay = $now->lt($b->expires_at);
+                } elseif ($b->slip->payment_status === 'pending') {
+                    $display = 'รอยืนยันการชำระเงิน';
+                } elseif ($b->slip->payment_status === 'rejected') {
+                    if ($now->lt($b->expires_at)) {
+                        $display = 'ชำระเงินไม่สำเร็จ';
+                        $canPay = true;
+                    } else {
+                        $display = 'หมดอายุ';
+                    }
+                } elseif ($b->slip->payment_status === 'confirmed') {
+                    $display = 'ชำระเงินแล้ว';
+                    $end = Carbon::parse($b->screening->screening_datetime)
+                        ->addMinutes($b->screening->movie->duration);
+                    $canView = $now->lte($end);
+                } elseif ($b->status === 'cancelled') {
+                    $display = 'ยกเลิกแล้ว';
+                }
+
+                $b->display_status   = $display;
+                $b->can_pay          = $canPay;
+                $b->can_view_ticket  = $canView;
+
+                return $b;
+            });
 
         return $this->returnJson($bookings);
     }
 
-    // ประวัติ = ยกเลิกแล้ว  หรือ  มีตั๋วแล้ว (จ่ายเรียบร้อย)
-    public function history()
+    public function expireOldBookings()
     {
-        $bookings = Booking::with(['screening.movie', 'tickets', 'slip'])
-            ->where('user_id', Auth::id())
-            ->where(function ($q) {
-                $q->where('status', 'cancelled')
-                    ->orWhereHas('tickets');          // มีตั๋ว = จบกระบวนการ
+        $now = Carbon::now();
+
+        // ดึงเฉพาะ bookings ที่ยัง active, หมดอายุแล้ว และไม่มี slip ที่ยืนยันแล้ว
+        $expired = Booking::where('status', 'active')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', $now)
+            ->whereDoesntHave('slip', function ($q) {
+                $q->where('payment_status', 'confirmed');
             })
-            ->latest()
             ->get();
 
-        return $this->returnJson($bookings);
+        foreach ($expired as $b) {
+            $b->status = 'expired';
+            $b->save();
+
+            // คืนที่นั่งใน pivot
+            DB::table('booking_seats')->where('booking_id', $b->id)->delete();
+        }
     }
 }

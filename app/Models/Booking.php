@@ -19,6 +19,7 @@ class Booking extends Model
         'total_price',
         'status',
         'cancellation_reason',
+        'expires_at',
     ];
     protected $hidden = ['deleted_at'];
     protected $softCascade = ['seats'];

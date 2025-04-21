@@ -11,28 +11,31 @@ class SeatController extends Controller
     //  App\Http\Controllers\SeatController.php
     public function index($screening_room_id)
     {
-        // id ของ screening ที่ front‑end ส่งมา (เช่น 12)
+        // 1) ไล่สถานะ expired ก่อน
+        app(\App\Http\Controllers\BookingController::class)
+            ->expireOldBookings();
+
+        // 2) โหลดที่นั่งพร้อม is_reserved
         $screeningId = request()->query('screening_id');
 
         $seats = DB::table('seats')
             ->select('seats.*')
-            ->selectRaw(
-                "EXISTS(
+            ->selectRaw("
+            EXISTS(
                 SELECT 1
                 FROM booking_seats bs
                 JOIN bookings b ON b.id = bs.booking_id
                 WHERE bs.seat_id     = seats.id
                   AND b.screening_id = ?
                   AND b.status       = 'active'
-            ) AS is_reserved",
-                [$screeningId]          // <‑‑ binding
-            )
+            ) AS is_reserved
+        ", [$screeningId])
             ->where('seats.screening_room_id', $screening_room_id)
             ->get();
 
-        // ได้ผลลัพธ์เป็น  [{… , "is_reserved":1}, { …,"is_reserved":0}, … ]
         return $this->returnJson($seats);
     }
+
 
     public function store(Request $request)
     {
@@ -69,7 +72,7 @@ class SeatController extends Controller
         if ($exists) {
             return $this->returnError('มีบางที่นั่งถูกจองไปแล้ว กรุณาโหลดใหม่', 409);
         }
-        
+
         $this->log('เพิ่มที่นั่ง', "เพิ่มที่นั่ง: {$seat->seat_number} ห้อง ID: {$seat->screening_room_id}");
 
         return $this->returnCreated($seat);
