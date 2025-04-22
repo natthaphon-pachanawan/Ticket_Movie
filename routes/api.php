@@ -12,6 +12,7 @@ use App\Http\Controllers\ScreeningController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\SlipController;
+use App\Http\Controllers\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,4 +120,7 @@ Route::middleware(['auth:api', 'is_admin'])->group(function () {
     Route::get('/slips/list',          [SlipController::class, 'index']);
     Route::post('/slips/update/{id}',   [SlipController::class, 'update']);
     Route::delete('/slips/delete/{id}',   [SlipController::class, 'destroy']);
+
+    // Reports
+    Route::get('/reports/sales', [ReportController::class,'salesSummary']);
 });

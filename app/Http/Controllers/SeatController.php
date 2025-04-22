@@ -15,10 +15,13 @@ class SeatController extends Controller
         app(\App\Http\Controllers\BookingController::class)
             ->expireOldBookings();
 
-        // 2) โหลดที่นั่งพร้อม is_reserved
+        // 2) โหลด screening_id จาก query string
         $screeningId = request()->query('screening_id');
 
+        // 3) ดึงที่นั่งโดยกรองเฉพาะแถวที่ยังไม่ถูก soft‑delete (deleted_at IS NULL)
         $seats = DB::table('seats')
+            ->whereNull('deleted_at')                                 // เพิ่มตรงนี้ให้ไม่เอา soft‑deleted
+            ->where('screening_room_id', $screening_room_id)
             ->select('seats.*')
             ->selectRaw("
             EXISTS(
@@ -30,7 +33,6 @@ class SeatController extends Controller
                   AND b.status       = 'active'
             ) AS is_reserved
         ", [$screeningId])
-            ->where('seats.screening_room_id', $screening_room_id)
             ->get();
 
         return $this->returnJson($seats);
@@ -39,43 +41,62 @@ class SeatController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'screening_room_id' => 'required|exists:screening_rooms,id',
-            'seat_number' => 'required|string|max:255',
-            'row' => 'required|integer|min:0',
-            'column' => 'required|integer|min:0',
-            'seat_type' => 'required|string|max:255',
-            'is_active' => 'required|boolean',
-        ]);
+        $mode = $request->input('mode', 'single');
 
-        $seat = Seat::create([
-            'screening_room_id' => $request->screening_room_id,
-            'seat_number' => $request->seat_number,
-            'row' => $request->row,
-            'column' => $request->column,
-            'seat_type' => $request->seat_type,
-            'is_active' => $request->is_active,
-        ]);
-        if (!$seat) {
-            return $this->returnError('เพิ่มข้อมูลไม่สำเร็จ', 500);
+        if ($mode === 'single') {
+            // สร้างทีละตัว
+            $data = $request->validate([
+                'screening_room_id' => 'required|exists:screening_rooms,id',
+                'seat_number'       => 'required|string|max:255',
+                'row'               => 'required|integer|min:0',
+                'column'            => 'required|integer|min:0',
+                'seat_type'         => 'required|string|max:255',
+                'is_active'         => 'required|boolean',
+            ]);
+
+            $seat = Seat::create($data);
+            $this->log('เพิ่มที่นั่ง', "Seat {$seat->seat_number} ห้อง {$seat->screening_room_id}");
+            return $this->returnCreated($seat);
         }
 
-        $seatIds = [$seat->id];
+        // --- bulk mode: รับ array ของ seats จาก front-end ---
+        $data = $request->validate([
+            'screening_room_id'   => 'required|exists:screening_rooms,id',
+            'seats'               => 'required|array',
+            'seats.*.row'         => 'required|integer|min:1',
+            'seats.*.column'      => 'required|integer|min:1',
+            'seats.*.seat_number' => 'required|string',
+            'seats.*.seat_type'   => 'required|string',
+            'is_active'           => 'required|boolean',
+        ]);
 
-        $exists = DB::table('booking_seats')
-            ->join('bookings', 'bookings.id', '=', 'booking_seats.booking_id')
-            ->whereIn('booking_seats.seat_id', $seatIds)
-            ->where('bookings.screening_id', $request->screening_id)
-            ->where('bookings.status', 'active')
-            ->exists();
+        $created = [];
+        foreach ($data['seats'] as $s) {
+            // ข้ามถ้าตำแหน่งซ้ำ
+            $exists = Seat::where('screening_room_id', $data['screening_room_id'])
+                ->where('row', $s['row'])
+                ->where('column', $s['column'])
+                ->exists();
+            if ($exists) continue;
 
-        if ($exists) {
-            return $this->returnError('มีบางที่นั่งถูกจองไปแล้ว กรุณาโหลดใหม่', 409);
+            $seat = Seat::create([
+                'screening_room_id' => $data['screening_room_id'],
+                'row'               => $s['row'],
+                'column'            => $s['column'],
+                'seat_number'       => $s['seat_number'],
+                'seat_type'         => $s['seat_type'],
+                'is_active'         => $data['is_active'],
+            ]);
+            $created[] = $seat;
         }
 
-        $this->log('เพิ่มที่นั่ง', "เพิ่มที่นั่ง: {$seat->seat_number} ห้อง ID: {$seat->screening_room_id}");
+        $count = count($created);
+        $this->log('bulk-create-seats', "สร้างที่นั่งจำนวน {$count} ตัว ในห้อง {$data['screening_room_id']}");
 
-        return $this->returnCreated($seat);
+        return $this->returnCreated([
+            'message' => "สร้างที่นั่งสำเร็จ {$count} ตัว",
+            'seats'   => $created,
+        ]);
     }
 
     public function update(Request $request, $id)
