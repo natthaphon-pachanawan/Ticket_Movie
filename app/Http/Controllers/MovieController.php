@@ -11,9 +11,25 @@ class MovieController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $movies = Movie::all();
+        // อ่านค่าจาก query string ?search=...
+        $search = $request->query('search', '');
+
+        // เริ่มต้น builder
+        $query = Movie::query();
+
+        // ถ้ามีคำค้น (ไม่ใช่สตริงว่าง) ให้กรอง title หรือ genre
+        if (trim($search) !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('genre', 'like', "%{$search}%");
+            });
+        }
+
+        // ดึงข้อมูล
+        $movies = $query->get();
+
         return $this->returnJson($movies);
     }
 

@@ -42,6 +42,8 @@ Route::get('/screenings/detail/{id}',                    [ScreeningController::c
 Route::get('/screenings/filter/by-movie',                [ScreeningController::class, 'listByMovie']);
 Route::get('/screenings/filter/by-movie-and-date',       [ScreeningController::class, 'filterByMovieAndDate']);
 
+Route::get('/reports/sales/pdf', [ReportController::class, 'salesReportPdf']);
+
 
 /*
 |--------------------------------------------------------------------------
