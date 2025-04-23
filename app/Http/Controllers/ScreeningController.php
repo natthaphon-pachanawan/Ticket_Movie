@@ -109,7 +109,13 @@ class ScreeningController extends Controller
     {
         $movie_id = $request->input('movie_id');
 
-        $screenings = Screening::with('movie', 'screeningRoom.cinema')
+        $screenings = Screening::with([
+            'movie',
+            // ดึงข้อมูลห้องฉาย พร้อม Cinema → Province/District/Subdistrict
+            'screeningRoom.cinema.province',
+            'screeningRoom.cinema.district',
+            'screeningRoom.cinema.subdistrict',
+        ])
             ->where('movie_id', $movie_id)
             ->get();
 
@@ -119,9 +125,14 @@ class ScreeningController extends Controller
     public function filterByMovieAndDate(Request $request)
     {
         $movie_id = $request->input('movie_id');
-        $date = $request->input('date');
+        $date     = $request->input('date');
 
-        $screenings = Screening::with('movie', 'screeningRoom.cinema')
+        $screenings = Screening::with([
+            'movie',
+            'screeningRoom.cinema.province',
+            'screeningRoom.cinema.district',
+            'screeningRoom.cinema.subdistrict',
+        ])
             ->where('movie_id', $movie_id)
             ->whereDate('screening_datetime', $date)
             ->orderBy('screening_datetime')
