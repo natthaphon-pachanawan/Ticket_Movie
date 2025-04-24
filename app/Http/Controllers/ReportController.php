@@ -16,27 +16,27 @@ class ReportController extends Controller
 {
     public function salesSummary(Request $request)
     {
-        $from = $request->query('date_start', Carbon::now()->subDays(30)->toDateString());
-        $to   = $request->query('date_end',   Carbon::now()->toDateString());
+        $date_start = $request->query('date_start', Carbon::now()->subDays(30)->toDateString());
+        $date_end   = $request->query('date_end',   Carbon::now()->toDateString());
 
-        $totalRevenue = Ticket::whereBetween('issued_at', ["$from 00:00:00", "$to 23:59:59"])
+        $totalRevenue = Ticket::whereBetween('issued_at', ["$date_start 00:00:00", "$date_end 23:59:59"])
             ->sum('price');
 
         $totalBookings = Ticket::distinct('booking_id')
-            ->whereBetween('issued_at', ["$from 00:00:00", "$to 23:59:59"])
+            ->whereBetween('issued_at', ["$date_start 00:00:00", "$date_end 23:59:59"])
             ->count('booking_id');
 
         $daily = Ticket::selectRaw("DATE(issued_at) as date,
                                 COUNT(*) as tickets_sold,
                                 SUM(price) as revenue")
-            ->whereBetween('issued_at', ["$from 00:00:00", "$to 23:59:59"])
+            ->whereBetween('issued_at', ["$date_start 00:00:00", "$date_end 23:59:59"])
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
         return $this->returnJson([
-            'date_start' => $from,
-            'date_end'   => $to,
+            'date_start' => $date_start,
+            'date_end'   => $date_end,
             'total_revenue' => $totalRevenue,
             'total_bookings' => $totalBookings,
             'daily' => $daily,
