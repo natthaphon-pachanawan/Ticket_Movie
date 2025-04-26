@@ -15,56 +15,58 @@ class SlipController extends Controller
      */
     public function index()
     {
-        $slip = Slip::with('booking')
-            ->get();
+        $slips = Slip::with([
+            'booking.user',
+            'booking.screening.movie'
+        ])->get();
 
-        return $this->returnJson($slip);
+        return $this->returnJson($slips);
     }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-{
-    $request->validate([
-        'booking_id'      => 'required|exists:bookings,id',
-        'slip_image_url'  => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'amount'          => 'required|numeric|min:0',
-        'payment_status'  => 'required|in:pending,confirmed,rejected',
-        'payment_date'    => 'nullable|date_format:Y-m-d H:i:s',
-    ]);
+    {
+        $request->validate([
+            'booking_id'      => 'required|exists:bookings,id',
+            'slip_image_url'  => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'amount'          => 'required|numeric|min:0',
+            'payment_status'  => 'required|in:pending,confirmed,rejected',
+            'payment_date'    => 'nullable|date_format:Y-m-d H:i:s',
+        ]);
 
-    // ถ้ามีสลิปเดิม
-    $existing = Slip::where('booking_id', $request->booking_id)->first();
-    if ($existing) {
-        // ลบรูปเก่า
-        if (Storage::disk('public')->exists($existing->slip_image_url)) {
-            Storage::disk('public')->delete($existing->slip_image_url);
+        // ถ้ามีสลิปเดิม
+        $existing = Slip::where('booking_id', $request->booking_id)->first();
+        if ($existing) {
+            // ลบรูปเก่า
+            if (Storage::disk('public')->exists($existing->slip_image_url)) {
+                Storage::disk('public')->delete($existing->slip_image_url);
+            }
+            // อัปโหลดรูปใหม่
+            $path = $request->file('slip_image_url')->store('slips', 'public');
+            $existing->slip_image_url = $path;
+            $existing->amount         = $request->amount;
+            $existing->payment_status = 'pending';            // reset
+            $existing->payment_date   = $request->payment_date;
+            $existing->save();
+
+            $this->log('อัปเดตสลิป', "Booking {$existing->booking_id} อัปเดตสลิปเป็น pending");
+            return $this->returnSuccess($existing);
         }
-        // อัปโหลดรูปใหม่
-        $path = $request->file('slip_image_url')->store('slips','public');
-        $existing->slip_image_url = $path;
-        $existing->amount         = $request->amount;
-        $existing->payment_status = 'pending';            // reset
-        $existing->payment_date   = $request->payment_date;
-        $existing->save();
 
-        $this->log('อัปเดตสลิป', "Booking {$existing->booking_id} อัปเดตสลิปเป็น pending");
-        return $this->returnSuccess($existing);
+        // มิฉะนั้น สร้างใหม่
+        $path = $request->file('slip_image_url')->store('slips', 'public');
+        $slip = Slip::create([
+            'booking_id'      => $request->booking_id,
+            'slip_image_url'  => $path,
+            'amount'          => $request->amount,
+            'payment_status'  => $request->payment_status,
+            'payment_date'    => $request->payment_date,
+        ]);
+        $this->log('สร้างสลิป', "Booking {$slip->booking_id} สร้างสลิป pending");
+        return $this->returnCreated($slip);
     }
-
-    // มิฉะนั้น สร้างใหม่
-    $path = $request->file('slip_image_url')->store('slips','public');
-    $slip = Slip::create([
-        'booking_id'      => $request->booking_id,
-        'slip_image_url'  => $path,
-        'amount'          => $request->amount,
-        'payment_status'  => $request->payment_status,
-        'payment_date'    => $request->payment_date,
-    ]);
-    $this->log('สร้างสลิป', "Booking {$slip->booking_id} สร้างสลิป pending");
-    return $this->returnCreated($slip);
-}
 
     /**
      * Display the specified resource.

@@ -46,7 +46,12 @@ class TicketController extends Controller
     // แสดงตั๋ว (หรือรายการตั๋ว)
     public function index()
     {
-        $tickets = Ticket::with(['booking', 'screening', 'seat'])->get();
+        $tickets = Ticket::with([
+            'screening.movie',
+            'screening.screeningRoom.cinema',
+            'seat'
+          ])
+        ->get();
         return $this->returnJson($tickets);
     }
 
@@ -102,7 +107,11 @@ class TicketController extends Controller
     {
         $user = Auth::user();
 
-        $tickets = Ticket::with(['screening.movie', 'seat'])  // เพิ่ม movie ผ่าน screening
+        $tickets = Ticket::with([
+            'screening.movie',
+            'screening.screeningRoom.cinema',
+            'seat'
+        ])
             ->whereHas('booking', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
