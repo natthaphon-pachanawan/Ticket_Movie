@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MovieController;
@@ -43,6 +44,12 @@ Route::get('/screenings/filter/by-movie',                [ScreeningController::c
 Route::get('/screenings/filter/by-movie-and-date',       [ScreeningController::class, 'filterByMovieAndDate']);
 
 Route::get('/reports/sales/pdf', [ReportController::class, 'salesReportPdf']);
+
+Route::get('/provinces/list',      [AddressController::class,   'indexProvince']);
+Route::get('/districts/list',      [AddressController::class,   'indexDistrict']);
+Route::get('/subdistricts/list',   [AddressController::class,   'indexSubdistrict']);
+
+
 
 
 /*

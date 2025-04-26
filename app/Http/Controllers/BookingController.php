@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
-    // แสดงรายการการจองทั้งหมด (หรืออาจเพิ่ม filter สำหรับ user ที่ login อยู่)
     public function index()
     {
         $bookings = Booking::with(['screening', 'screening.movie', 'tickets', 'seats'])
